@@ -947,7 +947,7 @@ class AmazonConverseConfig(BaseConfig):
                         SystemContentBlock(text=message["content"])
                     )
                     cache_block = self._get_cache_point_block(
-                        message, block_type="system"
+                        message, block_type="system", model=self._current_model
                     )
                     if cache_block:
                         system_content_blocks.append(cache_block)
@@ -958,7 +958,7 @@ class AmazonConverseConfig(BaseConfig):
                                 SystemContentBlock(text=m["text"])
                             )
                             cache_block = self._get_cache_point_block(
-                                m, block_type="system"
+                                m, block_type="system", model=self._current_model
                             )
                             if cache_block:
                                 system_content_blocks.append(cache_block)
