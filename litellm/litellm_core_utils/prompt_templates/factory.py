@@ -3784,6 +3784,7 @@ class BedrockConverseMessagesProcessor:
                                         OpenAIMessageContentListBlock, element
                                     ),
                                     block_type="content_block",
+                                    model=model,
                                 )
                             )
                             if _cache_point_block is not None:
@@ -3795,7 +3796,7 @@ class BedrockConverseMessagesProcessor:
                     _part = BedrockContentBlock(text=messages[msg_i]["content"])
                     _cache_point_block = (
                         litellm.AmazonConverseConfig()._get_cache_point_block(
-                            message_block, block_type="content_block"
+                            message_block, block_type="content_block", model=model
                         )
                     )
                     user_content.append(_part)
@@ -3943,6 +3944,7 @@ class BedrockConverseMessagesProcessor:
                                     OpenAIMessageContentListBlock, element
                                 ),
                                 block_type="content_block",
+                                model=model,
                             )
                         )
                         if _cache_point_block is not None:
@@ -3957,7 +3959,7 @@ class BedrockConverseMessagesProcessor:
                     # Add cache point block for assistant string content
                     _cache_point_block = (
                         litellm.AmazonConverseConfig()._get_cache_point_block(
-                            assistant_message_block, block_type="content_block"
+                            assistant_message_block, block_type="content_block", model=model
                         )
                     )
                     if _cache_point_block is not None:
@@ -4149,6 +4151,7 @@ def _bedrock_converse_messages_pt(  # noqa: PLR0915
                                     OpenAIMessageContentListBlock, element
                                 ),
                                 block_type="content_block",
+                                model=model,
                             )
                         )
                         if _cache_point_block is not None:
@@ -4158,7 +4161,7 @@ def _bedrock_converse_messages_pt(  # noqa: PLR0915
                 _part = BedrockContentBlock(text=messages[msg_i]["content"])
                 _cache_point_block = (
                     litellm.AmazonConverseConfig()._get_cache_point_block(
-                        message_block, block_type="content_block"
+                        message_block, block_type="content_block", model=model
                     )
                 )
                 user_content.append(_part)
@@ -4302,6 +4305,7 @@ def _bedrock_converse_messages_pt(  # noqa: PLR0915
                                     OpenAIMessageContentListBlock, element
                                 ),
                                 block_type="content_block",
+                                model=model,
                             )
                         )
                         if _cache_point_block is not None:

@@ -135,6 +135,43 @@ class AmazonAnthropicClaudeMessagesConfig(
                                 if isinstance(cache_control, dict) and "ttl" in cache_control:
                                     cache_control.pop("ttl", None)
 
+    def _strip_cache_control_fields(
+        self, anthropic_messages_request: Dict, model: str
+    ) -> None:
+        """
+        Strip cache_control fields from messages when the model doesn't support prompt caching.
+
+        This addresses the issue where cache_control blocks injected by clients like Claude Code
+        cause validation errors on models that don't support prompt caching (e.g., Qwen on Bedrock).
+
+        Args:
+            anthropic_messages_request: The request dictionary to modify in-place
+            model: The model name being called
+        """
+        # Import here to avoid circular imports
+        try:
+            from litellm import supports_prompt_caching
+            supports_caching = supports_prompt_caching(model=model, custom_llm_provider="bedrock")
+        except Exception:
+            # If we can't determine, default to checking if it's an Anthropic model
+            # Non-Anthropic models on Bedrock typically don't support prompt caching
+            supports_caching = "claude" in model.lower()
+
+        # If the model doesn't support prompt caching, strip all cache_control fields
+        if not supports_caching:
+            if "messages" in anthropic_messages_request:
+                for message in anthropic_messages_request["messages"]:
+                    if isinstance(message, dict) and "content" in message:
+                        content = message["content"]
+                        if isinstance(content, list):
+                            for item in content:
+                                if isinstance(item, dict) and "cache_control" in item:
+                                    item.pop("cache_control", None)
+
+                        # Also handle message-level cache_control (when content is a string)
+                        if "cache_control" in message and isinstance(message["content"], str):
+                            message.pop("cache_control", None)
+
     def _supports_extended_thinking_on_bedrock(self, model: str) -> bool:
         """
         Check if the model supports extended thinking beta headers on Bedrock.
@@ -388,7 +425,10 @@ class AmazonAnthropicClaudeMessagesConfig(
         # 4. Remove `ttl` field from cache_control in messages (Bedrock doesn't support it)
         self._remove_ttl_from_cache_control(anthropic_messages_request)
 
-        # 5. Convert `output_format` to inline schema (Bedrock invoke doesn't support output_format)
+        # 5. Strip cache_control fields for models that don't support prompt caching
+        self._strip_cache_control_fields(anthropic_messages_request, model)
+
+        # 6. Convert `output_format` to inline schema (Bedrock invoke doesn't support output_format)
         output_format = anthropic_messages_request.pop("output_format", None)
         if output_format:
             self._convert_output_format_to_inline_schema(
@@ -396,7 +436,7 @@ class AmazonAnthropicClaudeMessagesConfig(
                 anthropic_messages_request=anthropic_messages_request,
             )
             
-        # 6. AUTO-INJECT beta headers based on features used
+        # 7. AUTO-INJECT beta headers based on features used
         anthropic_model_info = AnthropicModelInfo()
         tools = anthropic_messages_optional_request_params.get("tools")
         messages_typed = cast(List[AllMessageValues], messages)

@@ -911,9 +911,24 @@ class AmazonConverseConfig(BaseConfig):
             ChatCompletionAssistantMessage,
         ],
         block_type: Literal["system", "content_block"],
+        model: Optional[str] = None,
     ) -> Optional[Union[SystemContentBlock, ContentBlock]]:
         if message_block.get("cache_control", None) is None:
             return None
+
+        # Check if the model supports prompt caching
+        # If not, don't create cache point blocks
+        if model:
+            try:
+                from litellm import supports_prompt_caching
+                if not supports_prompt_caching(model=model, custom_llm_provider="bedrock"):
+                    return None
+            except Exception:
+                # If we can't determine, default to checking if it's an Anthropic model
+                # Non-Anthropic models on Bedrock typically don't support prompt caching
+                if "claude" not in model.lower():
+                    return None
+
         if block_type == "system":
             return SystemContentBlock(cachePoint=CachePointBlock(type="default"))
         else:
@@ -1250,6 +1265,9 @@ class AmazonConverseConfig(BaseConfig):
         litellm_params: dict,
         headers: Optional[dict] = None,
     ) -> RequestObject:
+        # Store the current model for cache control checks
+        self._current_model = model
+
         messages, system_content_blocks = self._transform_system_message(messages)
 
         # Convert last user message to guarded_text if guardrailConfig is present
