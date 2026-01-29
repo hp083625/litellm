@@ -4318,7 +4318,7 @@ def _bedrock_converse_messages_pt(  # noqa: PLR0915
                 # Add cache point block for assistant string content
                 _cache_point_block = (
                     litellm.AmazonConverseConfig()._get_cache_point_block(
-                        assistant_message_block, block_type="content_block"
+                        assistant_message_block, block_type="content_block", model=model
                     )
                 )
                 if _cache_point_block is not None:
